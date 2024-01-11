@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/google/uuid"
 )
 
 type ProductInterface interface {
@@ -16,6 +17,26 @@ type ProductInterface interface {
 	GetPrice() float64
 }
 
+type ProductServiceInterface interface {
+	Get(id string) (ProductInterface, error)
+	Create(name string, price float64) (ProductInterface, error)
+	Enable(product ProductInterface) (ProductInterface, error)
+	Disable(product ProductInterface) (ProductInterface, error)
+}
+
+type ProductReader interface {
+	Get(id string) (ProductInterface, error)
+}
+
+type ProductWriter interface {
+	Save(product ProductInterface) (ProductInterface, error)
+}
+
+type ProductPersistenceInterface interface {
+	ProductReader
+	ProductWriter
+}
+
 const (
 	DISABLED = "disabled"
 	ENABLED  = "enabled"
@@ -24,8 +45,17 @@ const (
 type Product struct {
 	Id     string  `valid:"uuidv4"`
 	Name   string  `valid:"required"`
-	Price  float64 `valid:"float"`
+	Price  float64 `valid:"float,optional"`
 	Status string  `valid:"required"`
+}
+
+func NewProduct() *Product {
+	product := Product{
+		Id:     uuid.New().String(),
+		Status: DISABLED,
+	}
+
+	return &product
 }
 
 func init() {
@@ -61,7 +91,6 @@ func (p *Product) Enable() error {
 	}
 
 	return errors.New("the price must be greater than zero to enable product")
-
 }
 
 func (p *Product) Disable() error {
